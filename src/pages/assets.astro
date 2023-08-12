@@ -28,6 +28,17 @@ const remoteNotCdnImg = "https://cdn.pixabay.com/photo/2017/08/30/13/23/mesh-269
 
 		<h2>Assets Import <small>(import "{assetsImg}")</small></h2>
 		<Image
+			src={"~/assets/images/hero.png"}
+			widths={[400, 768, 1024, 2040]}
+			sizes="(max-width: 767px) 400px, (max-width: 1023px) 768px, (max-width: 2039px) 1024px, 2040px"
+			loading="eager"
+			width={1024}
+			height={576}
+			alt={"Astrowind Demo"}
+		/>
+
+		<h2>Assets Import <small>(import "{assetsImg}")</small></h2>
+		<Image
 			src={localImg}
 			width={300}
 			alt={"Assets Import Image"}
