@@ -13,10 +13,15 @@ const config = {
   deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
 };
 
-// Definiendo tipos para claridad
 type Path = ImageMetadata;
 type Width = number;
 type SizesConfig = string | null;
+
+const calculateHeight = (width: Width, aspectRatio: number) => {
+  return Math.floor(width / aspectRatio);
+};
+
+const calculateImageSize = (width: Width, sizes?: string) => config.imageSizes[config.imageSizes.length - 1]
 
 async function optimizeImage(
   image: Path,
@@ -24,6 +29,9 @@ async function optimizeImage(
   possibleWidths: Width[]
 ): Promise<Array<{ src: string; width: Width }>> {
   let widths = possibleWidths.filter((width) => width <= maxWidth);
+  if (widths.length === 0) {
+    widths = [calculateImageSize(maxWidth)]; // FIXME: Use the last imageSizes mayor than maxWidth
+  }
 
   return Promise.all(
     widths.map(async (width: Width) => ({
@@ -35,7 +43,11 @@ async function optimizeImage(
 
 async function generateResponsiveImgTag(
   image: Path,
-  optimizerFunc: (image: Path, maxWidth: Width, possibleWidths: Width[]) => Promise<Array<{ src: string; width: Width }>>,
+  optimizerFunc: (
+    image: Path,
+    maxWidth: Width,
+    possibleWidths: Width[]
+  ) => Promise<Array<{ src: string; width: Width }>>,
   maxWidth: Width,
   possibleWidths: Width[],
   sizesConfig?: SizesConfig
@@ -50,6 +62,7 @@ async function generateResponsiveImgTag(
     src: image.src,
     attributes: {
       width: maxWidth,
+      height: calculateHeight(maxWidth, image.width / image.height),
       srcset,
       sizes,
     },
@@ -79,8 +92,13 @@ console.log("_image: ", _image);
 let image = { src: props.src, attributes: { ...props, src: undefined } };
 
 if (_image !== null && typeof _image === "object") {
-
-  image = await generateResponsiveImgTag(_image, optimizeImage, Number(props.width), props.widths || config.deviceSizes, props.sizes)
+  image = await generateResponsiveImgTag(
+    _image,
+    optimizeImage,
+    Number(props.width),
+    props.widths || config.deviceSizes,
+    props.sizes
+  );
 } else if (typeof _image === "string" && (_image.startsWith("http://") || _image.startsWith("https://"))) {
   const { src, ...attributes } = transformProps(props);
 
