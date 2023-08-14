@@ -1,75 +1,18 @@
 ---
-import { getImage, type LocalImageProps } from "astro:assets";
-import { transformProps, type UnpicImageProps } from "@unpic/core";
-import type { HTMLAttributes } from "astro/types";
-import { findImage } from "~/utils/images.ts";
-import type { ImageMetadata } from "astro";
+import { findImage } from '~/utils/images';
+import {
+  getImagesOptimized,
+  astroAsseetsOptimizer,
+  unpicOptimizer,
+  type ImageProps,
+  type AttributesProps
+} from '~/utils/images-optimization';
 
-type Props = LocalImageProps | UnpicImageProps<HTMLAttributes<"img">>;
-
-/* ******* */
-const config = {
-  imageSizes: [16, 32, 48, 64, 96, 128, 256, 384], // FIXME: Use this when image.width is minor than deviceSizes
-  deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-};
-
-type Path = ImageMetadata;
-type Width = number;
-type SizesConfig = string | null;
-
-const calculateHeight = (width: Width, aspectRatio: number) => {
-  return Math.floor(width / aspectRatio);
-};
-
-const calculateImageSize = (width: Width, sizes?: string) => config.imageSizes[config.imageSizes.length - 1]
-
-async function optimizeImage(
-  image: Path,
-  maxWidth: Width,
-  possibleWidths: Width[]
-): Promise<Array<{ src: string; width: Width }>> {
-  let widths = possibleWidths.filter((width) => width <= maxWidth);
-  if (widths.length === 0) {
-    widths = [calculateImageSize(maxWidth)]; // FIXME: Use the last imageSizes mayor than maxWidth
-  }
-
-  return Promise.all(
-    widths.map(async (width: Width) => ({
-      src: (await getImage({ src: image, width: width })).src,
-      width: width,
-    }))
-  );
+type Props = ImageProps;
+type ImageType = {
+  src: string;
+  attributes: AttributesProps;
 }
-
-async function generateResponsiveImgTag(
-  image: Path,
-  optimizerFunc: (
-    image: Path,
-    maxWidth: Width,
-    possibleWidths: Width[]
-  ) => Promise<Array<{ src: string; width: Width }>>,
-  maxWidth: Width,
-  possibleWidths: Width[],
-  sizesConfig?: SizesConfig
-): Promise<{ src: string; attributes: any }> {
-  // FIXME: The reason there are two separate lists is that imageSizes is only used for images which provide a sizes prop, which indicates that the image is less than the full width of the screen. Therefore, the sizes in imageSizes should all be smaller than the smallest size in deviceSizes.
-  const optimizedPaths = await optimizerFunc(image, maxWidth, possibleWidths);
-
-  const srcset = optimizedPaths.map(({ src, width }) => `${src} ${width}w`).join(", ");
-  const sizes = sizesConfig || "(max-width: 320px) 280px, (max-width: 480px) 440px, 800px";
-
-  return {
-    src: image.src,
-    attributes: {
-      width: maxWidth,
-      height: calculateHeight(maxWidth, image.width / image.height),
-      srcset,
-      sizes,
-    },
-  };
-}
-
-/* ******* */
 
 const props = Astro.props;
 
@@ -77,39 +20,33 @@ if (props.alt === undefined || props.alt === null) {
   throw new Error();
 }
 
-if (typeof props.width === "string") {
+if (typeof props.width === 'string') {
   props.width = parseInt(props.width);
 }
 
-if (typeof props.height === "string") {
+if (typeof props.height === 'string') {
   props.height = parseInt(props.height);
+}
+
+if (!props.loading) {
+  props.loading = 'lazy';
+}
+
+if (!props.decoding) {
+  props.decoding = 'async';
 }
 
 const _image = await findImage(props.src);
 
-console.log("_image: ", _image);
+let image: ImageType | undefined = undefined;
 
-let image = { src: props.src, attributes: { ...props, src: undefined } };
-
-if (_image !== null && typeof _image === "object") {
-  image = await generateResponsiveImgTag(
-    _image,
-    optimizeImage,
-    Number(props.width),
-    props.widths || config.deviceSizes,
-    props.sizes
-  );
-} else if (typeof _image === "string" && (_image.startsWith("http://") || _image.startsWith("https://"))) {
-  const { src, ...attributes } = transformProps(props);
-
-  image = {
-    src: src,
-    attributes: attributes,
-  };
+if (_image !== null && typeof _image === 'object') {
+  image = await getImagesOptimized(_image, props, astroAsseetsOptimizer);
+} else if (typeof _image === 'string' && (_image.startsWith('http://') || _image.startsWith('https://'))) {
+  image = await getImagesOptimized(_image, props, unpicOptimizer);
+} else if (_image) {
+  image = await getImagesOptimized(_image, props);
 }
-
-console.log("~~~~~~~~~~ <Image>");
-console.log(image);
 ---
 
 {!image ? <Fragment /> : <img src={image.src} {...image.attributes} />}

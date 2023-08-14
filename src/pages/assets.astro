@@ -4,6 +4,7 @@ import { getEntry } from 'astro:content';
 // import { Image } from 'astro:assets'
 import Image from '~/components/Image.astro'
 import localImg from "~/assets/images/placeholder.jpeg"
+import UnpicImage from '~/components/UnpicImage.astro';
 
 const post1 = await getEntry('post', 'post-1');
 const post2 = await getEntry('post', 'post-2');
@@ -31,10 +32,10 @@ const remoteNotCdnImg = "https://cdn.pixabay.com/photo/2017/08/30/13/23/mesh-269
 			src={"~/assets/images/hero.png"}
 			widths={[400, 768, 1024, 2040]}
 			sizes="(max-width: 767px) 400px, (max-width: 1023px) 768px, (max-width: 2039px) 1024px, 2040px"
-			loading="eager"
 			width={1024}
 			height={576}
 			alt={"Astrowind Demo"}
+			loading="eager"
 		/>
 
 		<h2>Assets Import <small>(import "{assetsImg}")</small></h2>
@@ -60,21 +61,29 @@ const remoteNotCdnImg = "https://cdn.pixabay.com/photo/2017/08/30/13/23/mesh-269
 			alt={"Remote Image"}
 		/>
 
-		<!-- <h2>Remote Image not CDN <small>("{remoteNotCdnImg}")</small></h2>
+		<h2>Remote Image CDN original <small>("{remoteImg}")</small></h2>
+		<UnpicImage
+			src={remoteImg}
+			width={300}
+			height={300}
+			alt={"Remote Image"}
+		/>
+
+		<h2>Remote Image not CDN <small>("{remoteNotCdnImg}")</small></h2>
 		<Image
 			src={remoteNotCdnImg}
 			width={300}
 			height={300}
 			alt={"Remote Image not CDN"}
-		/> -->
+		/>
 
-		<!-- <h2>Public Image <small>("{publicImg}")</small></h2>
+		<h2>Public Image <small>("{publicImg}")</small></h2>
 		<Image
 			src={publicImg}
 			width={300}
 			height={300}
 			alt={"Public Image"}
-		/> -->
+		/>
 
 		<h2>Post 1 (Assets String)</h2>
 		<Image
